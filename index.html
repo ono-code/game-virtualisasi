@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Pembelajaran Interaktif TKJ: Linux OS & Remote SSH</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        terminal: {
+                            bg: '#0f172a',
+                            text: '#38bdf8',
+                            prompt: '#4ade80'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-certificate, #printable-certificate * { visibility: visible; }
+            #printable-certificate { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                        <i class="fa-brands fa-linux text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-white leading-tight flex items-center gap-2">
+                            TKJ Linux Virtual Lab
+                            <span class="text-xs bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">Modul Interaktif</span>
+                        </h1>
+                        <p class="text-xs text-slate-400">Sistem Operasi, VirtualBox & Remote SSH</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Navigation Tabs -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-700/50">
+                    <button onclick="switchTab('materi')" id="tab-btn-materi" class="nav-tab text-sky-400 bg-slate-800 border border-slate-600/50 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-book-open"></i> Materi Bacaan
+                    </button>
+                    <button onclick="switchTab('virtualbox')" id="tab-btn-virtualbox" class="nav-tab text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-box-archive"></i> VirtualBox VM
+                    </button>
+                    <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="nav-tab text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-terminal"></i> Simulator SSH
+                    </button>
+                    <button onclick="switchTab('kuis')" id="tab-btn-kuis" class="nav-tab text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-graduation-cap"></i> Uji Kompetensi (25 Soal)
+                    </button>
+                </nav>
+
+                <!-- Student Progress Tracker Indicator -->
+                <div class="hidden lg:flex items-center gap-3 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700/50">
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Progres Belajar</div>
+                        <div class="text-xs font-bold text-sky-400" id="overall-progress-text">0% Selesai</div>
+                    </div>
+                    <div class="w-12 bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div id="overall-progress-bar" class="bg-gradient-to-r from-sky-400 to-emerald-400 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu Bar -->
+        <div class="md:hidden flex items-center justify-around bg-slate-900 border-t border-slate-800 p-2 text-xs">
+            <button onclick="switchTab('materi')" class="mobile-tab text-sky-400 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-book-open text-base"></i> Materi
+            </button>
+            <button onclick="switchTab('virtualbox')" class="mobile-tab text-slate-400 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-box-archive text-base"></i> VirtualBox
+            </button>
+            <button onclick="switchTab('terminal')" class="mobile-tab text-slate-400 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-terminal text-base"></i> Simulator
+            </button>
+            <button onclick="switchTab('kuis')" class="mobile-tab text-slate-400 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-graduation-cap text-base"></i> Uji Soal
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- SECTION 1: MATERI BACAAN -->
+        <section id="content-materi" class="tab-content space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-sky-900/60 via-indigo-900/40 to-slate-800 border border-sky-500/30 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl text-sky-400">
+                    <i class="fa-brands fa-linux"></i>
+                </div>
+                <div class="max-w-3xl relative z-10">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-3">
+                        <i class="fa-solid fa-book"></i> Bahan Bacaan Lengkap Siswa
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        Modul Pembelajaran Linux, VirtualBox & Remote SSH
+                    </h2>
+                    <p class="mt-2 text-slate-300 text-sm sm:text-base leading-relaxed">
+                        Pelajari konsep dasar sistem operasi Linux, tata cara virtualisasi dengan Oracle VM VirtualBox, langkah instalasi server/desktop, hingga manajemen server jarak jauh menggunakan SSH Client.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Material Navigation Sub-Tabs -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="showBab(1)" id="bab-btn-1" class="bab-nav-btn active-bab bg-sky-600 text-white p-3.5 rounded-xl font-medium text-xs sm:text-sm text-left flex items-center justify-between shadow-md transition-all">
+                    <span>BAB 1: Pengenalan Linux</span>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                </button>
+                <button onclick="showBab(2)" id="bab-btn-2" class="bab-nav-btn bg-slate-800 text-slate-300 hover:bg-slate-700/80 p-3.5 rounded-xl font-medium text-xs sm:text-sm text-left flex items-center justify-between border border-slate-700 transition-all">
+                    <span>BAB 2: VirtualBox & VM</span>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                </button>
+                <button onclick="showBab(3)" id="bab-btn-3" class="bab-nav-btn bg-slate-800 text-slate-300 hover:bg-slate-700/80 p-3.5 rounded-xl font-medium text-xs sm:text-sm text-left flex items-center justify-between border border-slate-700 transition-all">
+                    <span>BAB 3: Instalasi OS Linux</span>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                </button>
+                <button onclick="showBab(4)" id="bab-btn-4" class="bab-nav-btn bg-slate-800 text-slate-300 hover:bg-slate-700/80 p-3.5 rounded-xl font-medium text-xs sm:text-sm text-left flex items-center justify-between border border-slate-700 transition-all">
+                    <span>BAB 4: Konfigurasi SSH</span>
+                    <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                </button>
+            </div>
+
+            <!-- BAB 1 CONTENT -->
+            <div id="bab-content-1" class="bab-container space-y-6 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8">
+                <div class="border-b border-slate-700 pb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-400">BAB 1</span>
+                    <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">Pengenalan Sistem Operasi Linux</h3>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-slate-300 text-sm sm:text-base space-y-4">
+                    <p>
+                        <strong>Linux</strong> adalah sistem operasi berarsitektur UNIX open-source yang dikembangkan pertama kali oleh <strong>Linus Torvalds</strong> pada tahun 1991. Karena bersumber terbuka (open-source) di bawah lisensi <strong>GNU General Public License (GPL)</strong>, Linux bebas untuk dikembangkan, dimodifikasi, dan didistribusikan ulang oleh siapa saja.
+                    </p>
+
+                    <h4 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced text-sky-400"></i> Perbandingan Linux Desktop vs. Linux Server
+                    </h4>
+
+                    <div class="overflow-x-auto my-4">
+                        <table class="w-full text-left border-collapse border border-slate-700 rounded-xl overflow-hidden text-sm">
+                            <thead class="bg-slate-900/90 text-sky-300">
+                                <tr>
+                                    <th class="p-3 border border-slate-700">Parameter</th>
+                                    <th class="p-3 border border-slate-700">Linux Desktop</th>
+                                    <th class="p-3 border border-slate-700">Linux Server</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700 bg-slate-800/40">
+                                <tr>
+                                    <td class="p-3 font-semibold text-white border border-slate-700">Antarmuka (UI)</td>
+                                    <td class="p-3 border border-slate-700">Graphical User Interface (GUI)</td>
+                                    <td class="p-3 border border-slate-700">Command Line Interface (CLI)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-white border border-slate-700">Penggunaan Resource</td>
+                                    <td class="p-3 border border-slate-700">RAM & CPU relatif lebih besar (rendering grafis)</td>
+                                    <td class="p-3 border border-slate-700">Sangat efisien, ringan, hemat RAM/Storage</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-white border border-slate-700">Tujuan Utama</td>
+                                    <td class="p-3 border border-slate-700">Produktivitas harian, multimedia, browsing</td>
+                                    <td class="p-3 border border-slate-700">Hosting web, database, routing, file sharing</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold text-white border border-slate-700">Contoh Distro</td>
+                                    <td class="p-3 border border-slate-700">Ubuntu Desktop, Linux Mint, Fedora</td>
+                                    <td class="p-3 border border-slate-700">Debian Server, Ubuntu Server, Rocky Linux</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-4 bg-sky-950/40 border border-sky-500/30 rounded-xl text-sky-200 text-xs sm:text-sm flex gap-3 my-4">
+                        <i class="fa-solid fa-lightbulb text-sky-400 text-lg mt-0.5"></i>
+                        <div>
+                            <strong>Catatan Penting TKJ:</strong> Di dunia industri dan infrastruktur jaringan, mayoritas server dijalankan menggunakan antarmuka CLI (Command Line Interface) tanpa tampilan grafis demi alasan stabilitas, efisiensi konsumsi RAM, dan tingkat keamanan yang lebih tinggi.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BAB 2 CONTENT -->
+            <div id="bab-content-2" class="bab-container hidden space-y-6 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8">
+                <div class="border-b border-slate-700 pb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-400">BAB 2</span>
+                    <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">Instalasi VirtualBox & Pembuatan Mesin Virtual (VM)</h3>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-slate-300 text-sm sm:text-base space-y-4">
+                    <p>
+                        <strong>Virtualisasi</strong> adalah teknologi yang memungkinkan kita menjalankan satu atau lebih sistem operasi (<em>Guest OS</em>) di atas sistem operasi utama (<em>Host OS</em>) secara bersamaan pada satu perangkat keras fisik.
+                    </p>
+
+                    <h4 class="text-lg font-bold text-white mt-4 mb-2">Langkah Membuat Mesin Virtual (VM) Linux Server:</h4>
+                    <ol class="list-decimal pl-5 space-y-2">
+                        <li>Buka aplikasi <strong>Oracle VM VirtualBox</strong>, lalu klik tombol <strong>New (Baru)</strong>.</li>
+                        <li>Masukkan nama VM (contoh: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300">Linux-Server-TKJ</code>), pilih Type: <strong>Linux</strong>, Version: <strong>Debian (64-bit)</strong> / <strong>Ubuntu (64-bit)</strong>.</li>
+                        <li>Alokasikan memori RAM (Disarankan minimal <strong>1024 MB / 1 GB</strong> untuk Server CLI).</li>
+                        <li>Pilih opsi hard disk <em>Create a virtual hard disk now</em> dengan tipe file <strong>VDI (VirtualBox Disk Image)</strong>.</li>
+                        <li>Pilih penyimpanan <strong>Dynamically Allocated</strong> dengan alokasi ruang berkisar <strong>20 GB</strong>.</li>
+                    </ol>
+
+                    <h4 class="text-lg font-bold text-white mt-6 mb-2 text-sky-300 flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired"></i> Konfigurasi Network Adapter VirtualBox (Sangat Penting!)
+                    </h4>
+                    <p>Agar komputer Host (laptop/PC Anda) dapat berkomunikasi dan melakukan SSH ke mesin virtual Linux Server, pahami 3 mode jaringan utama:</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+                            <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1 rounded-full border border-amber-500/30">Mode NAT</span>
+                            <h5 class="font-bold text-white mt-2">NAT (Default)</h5>
+                            <p class="text-xs text-slate-400 mt-1">VM bisa mengakses internet melalui Host, namun Host <strong>TIDAK BISA</strong> melakukan SSH langsung ke IP VM secara default tanpa port forwarding.</p>
+                        </div>
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-sky-500/50 shadow-lg shadow-sky-500/5">
+                            <span class="bg-sky-500/20 text-sky-300 text-xs font-bold px-2.5 py-1 rounded-full border border-sky-500/30">Rekomendasi Praktikum</span>
+                            <h5 class="font-bold text-white mt-2">Host-Only Adapter</h5>
+                            <p class="text-xs text-slate-400 mt-1">Membuat jaringan terisolasi khusus antara Host dan Guest VM. <strong>Sangat cocok untuk praktikum Remote SSH dari Laptop Host!</strong></p>
+                        </div>
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+                            <span class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">Mode Bridge</span>
+                            <h5 class="font-bold text-white mt-2">Bridged Adapter</h5>
+                            <p class="text-xs text-slate-400 mt-1">VM seolah-olah terhubung langsung ke router fisik yang sama dengan Host dan mendapatkan IP dari DHCP router fisik.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BAB 3 CONTENT -->
+            <div id="bab-content-3" class="bab-container hidden space-y-6 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8">
+                <div class="border-b border-slate-700 pb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-400">BAB 3</span>
+                    <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">Tata Cara Instalasi Linux Desktop & Server</h3>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-slate-300 text-sm sm:text-base space-y-4">
+                    <h4 class="text-lg font-bold text-white">1. Tahap Persiapan File ISO</h4>
+                    <p>Masukkan berkas image ISO ke dalam Virtual CD Storage pada VirtualBox: pilih VM $\rightarrow$ <strong>Settings</strong> $\rightarrow$ <strong>Storage</strong> $\rightarrow$ Klik icon Disc Kosong $\rightarrow$ Pilih <em>Choose a disk file</em> (Pilih ISO Debian/Ubuntu).</p>
+
+                    <h4 class="text-lg font-bold text-white mt-6">2. Langkah Instalasi Linux Server (Debian/Ubuntu CLI):</h4>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Pilih menu boot <strong>Install</strong> atau <strong>Graphical Install</strong>.</li>
+                        <li>Pilih Bahasa (<em>English</em> disarankan), Lokasi (<em>Indonesia</em>), dan Layout Keyboard (<em>American English</em>).</li>
+                        <li>Isi <strong>Hostname</strong> (misal: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300">server-tkj</code>).</li>
+                        <li>Atur kata sandi untuk akun <strong>root</strong> (Superuser) dan buat akun pengguna biasa (misal: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300">siswa</code>).</li>
+                        <li><strong>Partisi Disk:</strong> Pilih metode <em>Guided - use entire disk</em> untuk pemula. Pilih <em>Finish partitioning and write changes to disk</em>.</li>
+                        <li><strong>Software Selection (Penting!):</strong> Hilangkan centang pada Desktop Environment (GUI), lalu pastikan mencentang <code class="bg-slate-900 px-2 py-0.5 rounded text-emerald-400">[*] SSH server</code> dan <code class="bg-slate-900 px-2 py-0.5 rounded text-emerald-400">[*] standard system utilities</code>.</li>
+                        <li>Pasang Bootloader <strong>GRUB</strong> pada hard disk virtual utama (<code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300">/dev/sda</code>).</li>
+                        <li>Selesai instalasi, unmount file ISO dan reboot VM.</li>
+                    </ul>
+
+                    <h4 class="text-lg font-bold text-white mt-6">3. Langkah Instalasi Linux Desktop (GUI):</h4>
+                    <p>Pada instalasi Linux Desktop (seperti Ubuntu Desktop atau Linux Mint), proses jauh lebih visual. Anda cukup memilih <em>Try or Install Ubuntu</em>, menentukan zona waktu secara grafis, membagi partisi otomatis, dan menunggu penyalinan berkas hingga reboot.</p>
+                </div>
+            </div>
+
+            <!-- BAB 4 CONTENT -->
+            <div id="bab-content-4" class="bab-container hidden space-y-6 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 sm:p-8">
+                <div class="border-b border-slate-700 pb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-400">BAB 4</span>
+                    <h3 class="text-xl sm:text-2xl font-bold text-white mt-1">Konfigurasi Jaringan & Remote Server via SSH</h3>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-slate-300 text-sm sm:text-base space-y-4">
+                    <p>
+                        <strong>SSH (Secure Shell)</strong> adalah protokol jaringan terenkripsi yang digunakan untuk mengoperasikan layanan komputer secara jarak jauh (<em>remote control</em>) berbasis baris perintah (CLI). SSH bekerja secara default pada <strong>Port 22</strong>.
+                    </p>
+
+                    <h4 class="text-lg font-bold text-white mt-4">1. Mengecek Alamat IP di Linux Server</h4>
+                    <p>Login ke server Linux Anda, lalu jalankan perintah:</p>
+                    <pre class="bg-slate-900 p-3 rounded-xl border border-slate-700 font-mono text-sky-300 text-sm">ip a</pre>
+                    <p class="text-xs text-slate-400">Catat IP Address yang tertera pada interface Host-Only (misal: <code class="text-emerald-400 font-mono">192.168.56.10</code>).</p>
+
+                    <h4 class="text-lg font-bold text-white mt-6">2. Memastikan Service SSH Aktif</h4>
+                    <p>Cek status service OpenSSH Server:</p>
+                    <pre class="bg-slate-900 p-3 rounded-xl border border-slate-700 font-mono text-sky-300 text-sm">sudo systemctl status ssh</pre>
+                    <p>Jika status belum aktif, jalankan perintah:</p>
+                    <pre class="bg-slate-900 p-3 rounded-xl border border-slate-700 font-mono text-sky-300 text-sm">sudo systemctl start ssh
+sudo systemctl enable ssh</pre>
+
+                    <h4 class="text-lg font-bold text-white mt-6">3. Melakukan Remote SSH dari Komputer Host</h4>
+                    <p>Buka <strong>Command Prompt / PowerShell</strong> di Laptop Host Anda, ketikkan perintah:</p>
+                    <pre class="bg-slate-900 p-3 rounded-xl border border-slate-700 font-mono text-emerald-400 text-sm">ssh siswa@192.168.56.10</pre>
+                    <p class="text-xs text-slate-400">Ganti <code class="text-slate-300">siswa</code> dengan username server Anda dan <code class="text-slate-300">192.168.56.10</code> dengan IP Server VM Anda.</p>
+
+                    <div class="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-emerald-200 text-xs sm:text-sm my-4">
+                        <strong>Tips Tambahan:</strong> Anda juga bisa menggunakan aplikasi client berbasis GUI seperti <strong>PuTTY</strong> dengan mengisi Host Name: <code class="font-mono text-white">192.168.56.10</code>, Port: <code class="font-mono text-white">22</code>, dan Connection Type: <code class="font-mono text-white">SSH</code>.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: VIRTUALBOX SIMULATOR & BUILDER -->
+        <section id="content-virtualbox" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-sky-400"></i> Interactive VM Configurator
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Simulasikan racikan alokasi resource Virtual Machine sebelum membuat VM di VirtualBox asli.</p>
+                    </div>
+                    <span class="text-xs bg-slate-700 text-slate-300 px-3 py-1 rounded-full font-mono">Simulator Mode</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Form Controls -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">1. Nama Virtual Machine</label>
+                            <input type="text" id="sim-vm-name" value="Server-Debian-TKJ" oninput="updateVMSimulator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">2. Tipe Sistem Operasi</label>
+                            <select id="sim-vm-type" onchange="updateVMSimulator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+                                <option value="server-cli">Linux Server (CLI - Headless)</option>
+                                <option value="desktop-gui">Linux Desktop (GUI - Ubuntu/Mint)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="font-semibold uppercase tracking-wider text-slate-300">3. Alokasi RAM (MB)</span>
+                                <span id="sim-ram-val" class="font-bold text-sky-400 font-mono">1024 MB</span>
+                            </div>
+                            <input type="range" id="sim-vm-ram" min="512" max="8192" step="512" value="1024" oninput="updateVMSimulator()" class="w-full accent-sky-500 cursor-pointer">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">4. Mode Network Adapter 1</label>
+                            <select id="sim-vm-net" onchange="updateVMSimulator()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+                                <option value="host-only">Host-Only Adapter (Rekomendasi SSH)</option>
+                                <option value="nat">NAT (Default Internet)</option>
+                                <option value="bridged">Bridged Adapter (Jaringan Fisik)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Live VM Preview Dashboard -->
+                    <div class="bg-slate-900 rounded-xl p-5 border border-slate-700 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                                <span class="text-xs text-slate-400 font-semibold uppercase">Status Kelayakan Spec VM</span>
+                                <span id="sim-status-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    Siap Dibuat
+                                </span>
+                            </div>
+
+                            <div class="space-y-3 font-mono text-xs">
+                                <div class="flex justify-between bg-slate-800/60 p-2.5 rounded-lg">
+                                    <span class="text-slate-400">VM Name:</span>
+                                    <span id="prev-vm-name" class="text-sky-300 font-bold">Server-Debian-TKJ</span>
+                                </div>
+                                <div class="flex justify-between bg-slate-800/60 p-2.5 rounded-lg">
+                                    <span class="text-slate-400">OS Architecture:</span>
+                                    <span id="prev-vm-os" class="text-white">Debian (64-bit CLI)</span>
+                                </div>
+                                <div class="flex justify-between bg-slate-800/60 p-2.5 rounded-lg">
+                                    <span class="text-slate-400">Allocated RAM:</span>
+                                    <span id="prev-vm-ram" class="text-amber-300 font-bold">1024 MB</span>
+                                </div>
+                                <div class="flex justify-between bg-slate-800/60 p-2.5 rounded-lg">
+                                    <span class="text-slate-400">Network Mode:</span>
+                                    <span id="prev-vm-net" class="text-emerald-400 font-bold">Host-Only Adapter</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Box -->
+                        <div id="sim-analysis-box" class="mt-4 p-3 bg-slate-800/90 rounded-lg border border-slate-700 text-xs text-slate-300 space-y-1">
+                            <div class="font-bold text-sky-400"><i class="fa-solid fa-circle-check"></i> Analisis Spesifikasi:</div>
+                            <p id="sim-analysis-text">Alokasi RAM 1024 MB sangat ideal untuk Linux Server berbasis CLI. Komputer Host dapat terhubung via Remote SSH dengan aman.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: SIMULATOR TERMINAL & REMOTE SSH -->
+        <section id="content-terminal" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Side Task List / Lab Challenges -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="border-b border-slate-700 pb-3">
+                        <h3 class="font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-sky-400"></i> Misi Praktikum CLI & SSH
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-1">Selesaikan tantangan perintah berikut pada simulator terminal di samping.</p>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs">
+                        <div id="task-1" class="p-3 bg-slate-900 rounded-xl border border-slate-700 flex items-start gap-2.5">
+                            <i class="fa-regular fa-circle-check text-slate-500 text-base mt-0.5" id="task-icon-1"></i>
+                            <div>
+                                <div class="font-bold text-white">1. Cek Alamat IP Server</div>
+                                <div class="text-slate-400">Ketik perintah <code class="text-sky-300 font-mono">ip a</code> untuk menemukan IP address server.</div>
+                            </div>
+                        </div>
+
+                        <div id="task-2" class="p-3 bg-slate-900 rounded-xl border border-slate-700 flex items-start gap-2.5">
+                            <i class="fa-regular fa-circle-check text-slate-500 text-base mt-0.5" id="task-icon-2"></i>
+                            <div>
+                                <div class="font-bold text-white">2. Cek Status Service SSH</div>
+                                <div class="text-slate-400">Ketik <code class="text-sky-300 font-mono">sudo systemctl status ssh</code> untuk mengecek service.</div>
+                            </div>
+                        </div>
+
+                        <div id="task-3" class="p-3 bg-slate-900 rounded-xl border border-slate-700 flex items-start gap-2.5">
+                            <i class="fa-regular fa-circle-check text-slate-500 text-base mt-0.5" id="task-icon-3"></i>
+                            <div>
+                                <div class="font-bold text-white">3. Remote SSH dari Host</div>
+                                <div class="text-slate-400">Ketik <code class="text-sky-300 font-mono">ssh siswa@192.168.56.10</code> untuk remote.</div>
+                            </div>
+                        </div>
+
+                        <div id="task-4" class="p-3 bg-slate-900 rounded-xl border border-slate-700 flex items-start gap-2.5">
+                            <i class="fa-regular fa-circle-check text-slate-500 text-base mt-0.5" id="task-icon-4"></i>
+                            <div>
+                                <div class="font-bold text-white">4. Buat Folder Praktikum</div>
+                                <div class="text-slate-400">Ketik <code class="text-sky-300 font-mono">mkdir Modul_TKJ</code> setelah terhubung remote SSH.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-sky-950/40 border border-sky-500/30 rounded-xl text-xs text-sky-300">
+                        <i class="fa-solid fa-circle-info mr-1"></i> <strong>Saran Perintah:</strong> <code class="font-mono">help</code>, <code class="font-mono">clear</code>, <code class="font-mono">ip a</code>, <code class="font-mono">ssh siswa@192.168.56.10</code>, <code class="font-mono">mkdir [nama]</code>.
+                    </div>
+                </div>
+
+                <!-- Interactive Terminal Window -->
+                <div class="lg:col-span-2 bg-terminal-bg border border-slate-700 rounded-2xl shadow-2xl flex flex-col h-[520px] overflow-hidden">
+                    <!-- Terminal Window Bar -->
+                    <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                            <span class="text-xs font-mono text-slate-400 ml-2" id="terminal-window-title">bash - Host Terminal (Windows PowerShell)</span>
+                        </div>
+                        <button onclick="resetTerminal()" class="text-xs text-slate-400 hover:text-white bg-slate-800 px-2.5 py-1 rounded border border-slate-700">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Reset Terminal
+                        </button>
+                    </div>
+
+                    <!-- Terminal Output Scrollable Area -->
+                    <div id="terminal-screen" class="flex-1 p-4 font-mono text-xs sm:text-sm overflow-y-auto space-y-2 custom-scrollbar text-slate-200">
+                        <div class="text-slate-400">Virtual Terminal Environment v2.4 (Simulasi TKJ)</div>
+                        <div class="text-slate-400">Ketik <span class="text-emerald-400">help</span> untuk daftar perintah yang didukung.</div>
+                        <div class="border-b border-slate-800 pb-2">----------------------------------------------------</div>
+                    </div>
+
+                    <!-- Terminal Prompt Input Form -->
+                    <form onsubmit="handleTerminalSubmit(event)" class="bg-slate-900/90 p-3 border-t border-slate-800 flex items-center gap-2">
+                        <span id="terminal-prompt" class="font-mono text-xs sm:text-sm font-bold text-emerald-400 whitespace-nowrap">PS C:\Users\SiswaHost></span>
+                        <input type="text" id="terminal-input" autocomplete="off" class="flex-1 bg-transparent font-mono text-xs sm:text-sm text-sky-300 focus:outline-none" placeholder="Ketik perintah di sini...">
+                        <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded text-xs font-mono">Run</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: UJI KOMPETENSI (25 SOAL PILIHAN GANDA A-E) -->
+        <section id="content-kuis" class="tab-content hidden space-y-6">
+            <!-- Quiz Start Cover Screen -->
+            <div id="quiz-start-screen" class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-10 text-center max-w-2xl mx-auto space-y-6 shadow-2xl">
+                <div class="w-16 h-16 bg-sky-500/20 text-sky-400 rounded-2xl border border-sky-500/30 flex items-center justify-center text-3xl mx-auto">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Uji Kompetensi Soal Pilihan Ganda</h2>
+                    <p class="text-sm text-slate-400 mt-2">
+                        Evaluasi pemahaman Anda mengenai Linux OS, VirtualBox, Konfigurasi IP Network, dan Remote Management SSH.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-left max-w-md mx-auto text-xs bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+                    <div><span class="text-slate-400">Jumlah Soal:</span> <strong class="text-white">25 Butir</strong></div>
+                    <div><span class="text-slate-400">Opsi Jawaban:</span> <strong class="text-white">5 Opsi (A, B, C, D, E)</strong></div>
+                    <div><span class="text-slate-400">Metode:</span> <strong class="text-sky-400">Acak Otomatis (Shuffled)</strong></div>
+                    <div><span class="text-slate-400">Standar Kelulusan:</span> <strong class="text-emerald-400">75% (19/25 Benar)</strong></div>
+                </div>
+
+                <button onclick="startQuiz()" class="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold px-8 py-3.5 rounded-xl shadow-lg shadow-sky-500/20 text-sm transition-all flex items-center gap-2 mx-auto">
+                    <i class="fa-solid fa-play"></i> Mulai Ujian Sekarang
+                </button>
+            </div>
+
+            <!-- Quiz Running Screen -->
+            <div id="quiz-running-screen" class="hidden max-w-3xl mx-auto space-y-6">
+                <!-- Quiz Progress Bar Header -->
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-400 uppercase font-semibold">Soal Ke-</span>
+                        <div class="text-lg font-bold text-sky-400" id="quiz-question-number">1 / 25</div>
+                    </div>
+                    <div class="w-48 bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                        <div id="quiz-progress-fill" class="bg-sky-500 h-full w-0 transition-all"></div>
+                    </div>
+                </div>
+
+                <!-- Question Card -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl">
+                    <h3 class="text-base sm:text-lg font-semibold text-white leading-relaxed" id="quiz-question-text">
+                        Loading pertanyaan...
+                    </h3>
+
+                    <!-- Options Container (A, B, C, D, E) -->
+                    <div class="space-y-3" id="quiz-options-container">
+                        <!-- Dynamic Options loaded via JS -->
+                    </div>
+
+                    <!-- Navigation Footer -->
+                    <div class="flex items-center justify-between border-t border-slate-700 pt-5">
+                        <button onclick="prevQuestion()" id="btn-prev-q" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all disabled:opacity-40">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Sebelumnya
+                        </button>
+                        <button onclick="nextQuestion()" id="btn-next-q" class="bg-sky-600 hover:bg-sky-500 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+                            Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Result Summary Screen -->
+            <div id="quiz-result-screen" class="hidden max-w-3xl mx-auto space-y-6">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 text-center space-y-6 shadow-2xl">
+                    <div id="result-badge-icon" class="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto shadow-xl">
+                        <!-- Icon loaded via JS -->
+                    </div>
+
+                    <div>
+                        <h2 class="text-2xl font-bold text-white" id="result-status-title">Hasil Evaluasi Kompetensi</h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1" id="result-status-subtitle">Ringkasan nilai ujian Anda</p>
+                    </div>
+
+                    <!-- Score Card -->
+                    <div class="grid grid-cols-3 gap-3 bg-slate-900/90 p-4 rounded-xl border border-slate-700">
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-semibold uppercase">Total Nilai</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-sky-400 mt-1" id="result-score-val">0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-semibold uppercase">Jawaban Benar</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1" id="result-correct-val">0 / 25</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-semibold uppercase">Status</div>
+                            <div class="text-xs sm:text-sm font-bold mt-2.5" id="result-pass-badge">LULUS</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button onclick="restartQuiz()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-medium">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Ulangi Kuis (Soal Diacak)
+                        </button>
+                        <button onclick="showExplanations()" class="bg-sky-600 hover:bg-sky-500 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold">
+                            <i class="fa-solid fa-list-check mr-1"></i> Lihat Pembahasan Soal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detailed Explanation List Container -->
+                <div id="quiz-explanations-container" class="hidden space-y-4">
+                    <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">Pembahasan Detail Soal:</h3>
+                    <div id="explanations-list" class="space-y-4"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+        <p>© 2026 Modul Pembelajaran Interaktif TKJ - Linux OS & Remote Management SSH</p>
+    </footer>
+
+    <script>
+        // Global State & Data Store
+        let currentTab = 'materi';
+        let currentBab = 1;
+
+        // 25 Master Quiz Questions Data Bank (A, B, C, D, E)
+        const rawQuestionBank = [
+            {
+                q: "Siapakah tokoh yang pertama kali menciptakan kernel sistem operasi Linux pada tahun 1991?",
+                options: ["Linus Torvalds", "Bill Gates", "Steve Jobs", "Dennis Ritchie", "Ken Thompson"],
+                answer: 0,
+                explain: "Kernel Linux pertama kali dikembangkan dan dirilis oleh Linus Torvalds pada Agustus 1991."
+            },
+            {
+                q: "Perbedaan utama antara Linux Server dan Linux Desktop terletak pada...",
+                options: [
+                    "Linux Desktop berfokus pada antarmuka GUI, sedangkan Linux Server mengutamakan CLI demi efisiensi",
+                    "Linux Server tidak menggunakan kernel Linux sama sekali",
+                    "Linux Desktop hanya bisa dijalankan di atas VirtualBox",
+                    "Linux Server tidak mendukung koneksi jaringan TCP/IP",
+                    "Linux Desktop berlisensi komersial sedangkan Linux Server selalu gratis"
+                ],
+                answer: 0,
+                explain: "Linux Server berfokus pada efisiensi resource dan performa tinggi dengan CLI, sementara Desktop menggunakan GUI untuk kenyamanan pengguna."
+            },
+            {
+                q: "Manakah perintah Linux CLI yang digunakan untuk menampilkan alamat IP interface jaringan?",
+                options: ["ip a", "netstat -a", "ping local", "ls -la", "cd /etc/network"],
+                answer: 0,
+                explain: "Perintah 'ip a' (singkatan dari ip address) digunakan untuk melihat status interface dan alamat IP pada Linux."
+            },
+            {
+                q: "Protokol SSH (Secure Shell) secara standar/default berjalan pada port nomor...",
+                options: ["22", "80", "21", "443", "3306"],
+                answer: 0,
+                explain: "Protokol SSH menggunakan port 22 secara default untuk komunikasi terenkripsi."
+            },
+            {
+                q: "Mode Network Adapter pada VirtualBox yang paling tepat digunakan untuk menyambungkan komputer Host dengan VM Server secara terisolasi adalah...",
+                options: ["Host-Only Adapter", "NAT", "Internal Network", "Bridged Adapter", "Generic Driver"],
+                answer: 0,
+                explain: "Host-Only Adapter membuat jaringan virtual tertutup antara komputer Host dan VM Guest."
+            },
+            {
+                q: "Aplikasi SSH Client populer berbasis GUI di sistem operasi Windows yang sering digunakan untuk meremote server adalah...",
+                options: ["PuTTY", "VirtualBox", "Wireshark", "FileZilla Server", "Cisco Packet Tracer"],
+                answer: 0,
+                explain: "PuTTY adalah aplikasi SSH client ringan dan sangat populer untuk Windows."
+            },
+            {
+                q: "Perintah CLI untuk menginstal paket OpenSSH Server pada distribusi Linux Debian/Ubuntu adalah...",
+                options: ["sudo apt install openssh-server", "sudo yum install ssh", "install ssh-server", "apt-get remove openssh-server", "systemctl enable ssh"],
+                answer: 0,
+                explain: "Perintah 'sudo apt install openssh-server' digunakan untuk mengunduh dan menginstal paket SSH server di Debian/Ubuntu."
+            },
+            {
+                q: "Untuk memeriksa apakah layanan/service SSH sedang berjalan (active) atau tidak, perintah yang digunakan adalah...",
+                options: ["sudo systemctl status ssh", "service ssh restart", "cat /etc/ssh/sshd_config", "ping ssh", "ssh localhost"],
+                answer: 0,
+                explain: "Perintah 'systemctl status ssh' menampilkan informasi status aktif/tidaknya layanan SSH."
+            },
+            {
+                q: "Format penulisan perintah yang benar saat melakukan remote SSH dari terminal Host ke server dengan user 'siswa' dan IP '192.168.56.10' adalah...",
+                options: ["ssh siswa@192.168.56.10", "connect ssh 192.168.56.10 siswa", "ssh 192.168.56.10:siswa", "ping siswa@192.168.56.10", "login siswa -h 192.168.56.10"],
+                answer: 0,
+                explain: "Sintaks standar SSH adalah 'ssh [username]@[IP_Address]'."
+            },
+            {
+                q: "Lokasi file konfigurasi utama interface jaringan statis pada distribusi Linux Debian (versi standar) adalah...",
+                options: ["/etc/network/interfaces", "/etc/ssh/sshd_config", "/var/log/syslog", "/home/user/network", "/bin/netconfig"],
+                answer: 0,
+                explain: "File '/etc/network/interfaces' menyimpan konfigurasi alamat IP statis maupun DHCP di Debian."
+            },
+            {
+                q: "Format ekstensi file standar untuk penyimpanan Virtual Hard Disk bawaan Oracle VM VirtualBox adalah...",
+                options: [".vdi", ".iso", ".exe", ".deb", ".zip"],
+                answer: 0,
+                explain: "VDI (VirtualBox Disk Image) adalah format native hard disk virtual milik VirtualBox."
+            },
+            {
+                q: "Lisensi utama yang mendasari Sistem Operasi Linux sehingga kode sumbernya terbuka untuk umum adalah...",
+                options: ["GNU General Public License (GPL)", "Proprietary Commercial License", "EULA Microsoft", "Creative Commons ND", "MIT Commercial License"],
+                answer: 0,
+                explain: "Linux berada di bawah lisensi free/open-source GNU GPL."
+            },
+            {
+                q: "Nama akun pengguna dengan hak akses tertinggi (Superuser/Administrator) di sistem Linux adalah...",
+                options: ["root", "admin", "administrator", "superuser", "master"],
+                answer: 0,
+                explain: "Pengguna tertinggi dengan wewenang penuh di Linux disebut dengan akun 'root'."
+            },
+            {
+                q: "Tipe alokasi penyimpanan hard disk virtual di VirtualBox yang ukurannya bertambah secara dinamis sesuai isi data adalah...",
+                options: ["Dynamically allocated", "Fixed size", "Split drive", "Raw disk access", "Compressed volume"],
+                answer: 0,
+                explain: "Dynamically allocated hanya menggunakan ruang disk fisik sesuai jumlah data aktual yang terisi di VM."
+            },
+            {
+                q: "Untuk menguji konektivitas jaringan dasar antara Komputer Host dan VM Server Linux, perintah yang digunakan adalah...",
+                options: ["ping [IP_Server]", "ssh [IP_Server]", "traceroute [IP_Server]", "ipconfig /all", "nslookup [IP_Server]"],
+                answer: 0,
+                explain: "Perintah 'ping' mengirimkan ICMP Echo Request untuk menguji apakah Host tujuan merespon."
+            },
+            {
+                q: "Perintah Linux CLI yang digunakan untuk membuat sebuah folder/direktori baru adalah...",
+                options: ["mkdir", "rmdir", "touch", "nano", "cd"],
+                answer: 0,
+                explain: "'mkdir' (make directory) adalah perintah untuk membuat folder baru."
+            },
+            {
+                q: "Salah satu keunggulan antarmuka CLI dibandingkan GUI pada Linux Server adalah...",
+                options: ["Sangat hemat konsumsi memori RAM dan CPU", "Tampilan penuh warna dan animasi menarik", "Tidak memerlukan pengetikan perintah", "Dapat dioperasikan penuh hanya dengan klik mouse", "Membatasi jumlah pengguna secara permanen"],
+                answer: 0,
+                explain: "CLI tidak membebankan rendering grafis sehingga sangat hemat pemakaian RAM dan prosesor."
+            },
+            {
+                q: "Apa akibat jika file ISO tidak dicopot (unmount) dari Virtual CD/DVD drive setelah instalasi OS selesai?",
+                options: ["VM dapat kembali melakukan booting ke installer ISO saat di-restart", "Aplikasi VirtualBox akan terhapus otomatis", "Kapasitas RAM Host akan langsung habis", "Password root akan terisi secara otomatis", "IP Address server akan berubah ke 0.0.0.0"],
+                answer: 0,
+                explain: "Jika urutan boot CD/DVD berada di atas, VM akan terus masuk ke menu instalasi ISO."
+            },
+            {
+                q: "Perintah Linux untuk memperbarui daftar indeks repositori paket aplikasi pada Debian/Ubuntu adalah...",
+                options: ["sudo apt update", "sudo apt upgrade", "sudo apt install", "sudo apt autoremove", "sudo apt reboot"],
+                answer: 0,
+                explain: "'apt update' memperbarui daftar katalog informasi paket aplikasi dari repositori."
+            },
+            {
+                q: "Program bootloader standar yang umum digunakan Linux untuk memuat kernel ke memori saat booting adalah...",
+                options: ["GRUB", "LILO Old", "BIOS Loader", "Systemd-boot default", "NTLDR"],
+                answer: 0,
+                explain: "GRUB (Grand Unified Bootloader) adalah bootloader default untuk mayoritas distro Linux modern."
+            },
+            {
+                q: "Saat pertama kali melakukan koneksi SSH ke server baru, pengguna diminta menyetujui pertukaran 'Host Key'. Fungsinya adalah...",
+                options: ["Memverifikasi identitas kunci enkripsi keamanan antara Client dan Server", "Mengunduh file sistem operasi secara otomatis", "Mengubah password root pengguna", "Menentukan IP address dinamik baru", "Menonaktifkan sistem pertahanan firewall"],
+                answer: 0,
+                explain: "Pertukaran Host Key memastikan Client terhubung ke server yang asli dan mengenkripsi sesi komunikasi."
+            },
+            {
+                q: "Jika layanan SSH berstatus 'inactive (dead)', perintah untuk mengaktifkannya kembali adalah...",
+                options: ["sudo systemctl start ssh", "sudo systemctl stop ssh", "sudo systemctl disable ssh", "sudo apt remove openssh-server", "sudo reboot ssh"],
+                answer: 0,
+                explain: "'systemctl start ssh' diperintahkan untuk memulai service SSH yang sedang mati."
+            },
+            {
+                q: "Mode Network VirtualBox yang membuat VM memperoleh IP Address langsung dari DHCP Router fisik adalah...",
+                options: ["Bridged Adapter", "Host-Only Adapter", "NAT", "Internal Network", "Not Attached"],
+                answer: 0,
+                explain: "Bridged Adapter menjembatani kartu jaringan VM langsung ke fisik LAN/WiFi router."
+            },
+            {
+                q: "Editor teks berbasis CLI yang simpel dan mudah digunakan di Linux Server untuk mengedit file konfigurasi adalah...",
+                options: ["nano", "notepad", "wordpad", "gedit", "paint"],
+                answer: 0,
+                explain: "'nano' adalah tekst editor CLI intuitif dan umum tersedia secara bawaan di Linux."
+            },
+            {
+                q: "Kombinasi tombol keyboard pada text editor 'nano' yang berfungsi untuk menyimpan (Save/WriteOut) perubahan file adalah...",
+                options: ["Ctrl + O", "Ctrl + X", "Ctrl + C", "Ctrl + Z", "Ctrl + S"],
+                answer: 0,
+                explain: "Pada editor nano, 'Ctrl + O' digunakan untuk Save/WriteOut, dan 'Ctrl + X' untuk Exit."
+            }
+        ];
+
+        // Shuffled State
+        let activeQuizQuestions = [];
+        let userAnswers = [];
+        let currentQuizIndex = 0;
+
+        // Simulator Terminal State
+        let isSshConnected = false;
+        let labTasks = { task1: false, task2: false, task3: false, task4: false };
+
+        // INITIALIZATION
+        window.onload = function() {
+            updateVMSimulator();
+        };
+
+        // Tab Navigation Switcher
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('text-sky-400', 'bg-slate-800', 'border', 'border-slate-600/50');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-sky-400', 'bg-slate-800', 'border', 'border-slate-600/50');
+                activeBtn.classList.remove('text-slate-400');
+            }
+            updateOverallProgress();
+        }
+
+        // Bab Switcher inside Reading Material
+        function showBab(babNum) {
+            currentBab = babNum;
+            document.querySelectorAll('.bab-container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`bab-content-${babNum}`).classList.remove('hidden');
+
+            document.querySelectorAll('.bab-nav-btn').forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white', 'shadow-md');
+                btn.classList.add('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+            });
+
+            const activeBabBtn = document.getElementById(`bab-btn-${babNum}`);
+            if (activeBabBtn) {
+                activeBabBtn.classList.add('bg-sky-600', 'text-white', 'shadow-md');
+                activeBabBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border');
+            }
+            updateOverallProgress();
+        }
+
+        // Overall Progress Tracker
+        function updateOverallProgress() {
+            let points = currentBab * 15; // Reading chapters
+            if (labTasks.task1) points += 10;
+            if (labTasks.task3) points += 15;
+            if (userAnswers.length === 25) points += 15;
+            if (points > 100) points = 100;
+
+            document.getElementById('overall-progress-text').innerText = `${points}% Selesai`;
+            document.getElementById('overall-progress-bar').style.width = `${points}%`;
+        }
+
+        // VirtualBox Interactive Builder Logic
+        function updateVMSimulator() {
+            const name = document.getElementById('sim-vm-name').value || 'VM-Linux';
+            const type = document.getElementById('sim-vm-type').value;
+            const ram = parseInt(document.getElementById('sim-vm-ram').value);
+            const net = document.getElementById('sim-vm-net').value;
+
+            document.getElementById('sim-ram-val').innerText = `${ram} MB`;
+            document.getElementById('prev-vm-name').innerText = name;
+
+            let osText = (type === 'server-cli') ? 'Debian / Ubuntu (64-bit CLI)' : 'Ubuntu Desktop (64-bit GUI)';
+            document.getElementById('prev-vm-os').innerText = osText;
+            document.getElementById('prev-vm-ram').innerText = `${ram} MB`;
+
+            let netText = 'Host-Only Adapter';
+            if (net === 'nat') netText = 'NAT Mode';
+            if (net === 'bridged') netText = 'Bridged Adapter';
+            document.getElementById('prev-vm-net').innerText = netText;
+
+            // Spec Evaluation Analysis
+            const analysisText = document.getElementById('sim-analysis-text');
+            const badge = document.getElementById('sim-status-badge');
+
+            if (type === 'server-cli') {
+                if (ram < 512) {
+                    badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/30";
+                    badge.innerText = "RAM Terlalu Kecil";
+                    analysisText.innerHTML = "RAM di bawah 512MB berisiko menyebabkan server crash atau Out of Memory.";
+                } else if (ram <= 2048) {
+                    badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    badge.innerText = "Sangat Ideal";
+                    analysisText.innerHTML = "Spesifikasi sempurna untuk Linux Server CLI! Sangat efisien dan hemat penggunaan RAM di laptop Host.";
+                } else {
+                    badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                    badge.innerText = "RAM Pemborosan";
+                    analysisText.innerHTML = "Alokasi RAM > 2GB untuk server murni CLI kurang efisien dan membuang resource laptop Host.";
+                }
+            } else {
+                if (ram < 2048) {
+                    badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                    badge.innerText = "Lambat (GUI)";
+                    analysisText.innerHTML = "Linux Desktop dengan GUI membutuhkan RAM minimal 2048 MB agar tidak lambat/lag.";
+                } else {
+                    badge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    badge.innerText = "Siap untuk GUI";
+                    analysisText.innerHTML = "Alokasi RAM cukup untuk menjalankan desktop lingkungan grafis (GNOME/XFCE).";
+                }
+            }
+        }
+
+        // Terminal Simulator Logic
+        function handleTerminalSubmit(e) {
+            e.preventDefault();
+            const inputEl = document.getElementById('terminal-input');
+            const cmd = inputEl.value.trim();
+            if (!cmd) return;
+
+            const screen = document.getElementById('terminal-screen');
+            const promptText = document.getElementById('terminal-prompt').innerText;
+
+            // Append Executed Command
+            const line = document.createElement('div');
+            line.className = "flex gap-2 font-mono";
+            line.innerHTML = `<span class="text-emerald-400 font-bold">${promptText}</span> <span class="text-white">${cmd}</span>`;
+            screen.appendChild(line);
+
+            // Execute CLI Command Logic
+            processCommand(cmd.toLowerCase(), cmd);
+
+            inputEl.value = '';
+            screen.scrollTop = screen.scrollHeight;
+        }
+
+        function printTerminal(msg, colorClass = "text-slate-300") {
+            const screen = document.getElementById('terminal-screen');
+            const res = document.createElement('div');
+            res.className = `font-mono ${colorClass} pl-2 leading-relaxed`;
+            res.innerHTML = msg;
+            screen.appendChild(res);
+            screen.scrollTop = screen.scrollHeight;
+        }
+
+        function processCommand(cmdLower, originalCmd) {
+            if (cmdLower === 'help') {
+                printTerminal("Perintah yang dapat dicoba: <br>- <span class='text-sky-300'>ip a</span> : Cek IP address<br>- <span class='text-sky-300'>sudo systemctl status ssh</span> : Cek SSH<br>- <span class='text-sky-300'>ssh siswa@192.168.56.10</span> : Remote SSH<br>- <span class='text-sky-300'>mkdir [nama_folder]</span> : Buat folder<br>- <span class='text-sky-300'>clear</span> : Bersihkan layar", "text-amber-300");
+            } 
+            else if (cmdLower === 'clear') {
+                document.getElementById('terminal-screen').innerHTML = '';
+            } 
+            else if (cmdLower === 'ip a' || cmdLower === 'ifconfig') {
+                if (!isSshConnected) {
+                    printTerminal("1: lo: &lt;LOOPBACK,UP&gt; mtu 65536<br>2: enp0s3: &lt;BROADCAST,MULTICAST,UP&gt; inet 192.168.56.1/24 (Host VirtualNet)", "text-sky-200");
+                } else {
+                    printTerminal("1: lo: &lt;LOOPBACK,UP&gt; mtu 65536<br>2: enp0s3: &lt;BROADCAST,MULTICAST,UP&gt; inet <b>192.168.56.10/24</b> (Debian Server VM)", "text-emerald-300");
+                }
+                completeTask(1);
+            } 
+            else if (cmdLower.includes('systemctl status ssh')) {
+                printTerminal("● ssh.service - OpenSSH server daemon<br>&nbsp;&nbsp;Loaded: loaded (/lib/systemd/system/ssh.service)<br>&nbsp;&nbsp;Active: <b class='text-emerald-400'>active (running)</b> since Thu 2026-10-22 08:00:00 WIB<br>&nbsp;&nbsp;Main PID: 1024 (sshd)", "text-slate-200");
+                completeTask(2);
+            } 
+            else if (cmdLower.startsWith('ssh ')) {
+                if (cmdLower.includes('siswa@192.168.56.10')) {
+                    isSshConnected = true;
+                    document.getElementById('terminal-prompt').innerText = "siswa@server-tkj:~$";
+                    document.getElementById('terminal-prompt').className = "font-mono text-xs sm:text-sm font-bold text-sky-400 whitespace-nowrap";
+                    document.getElementById('terminal-window-title').innerText = "SSH Session - siswa@192.168.56.10 (Port 22)";
+                    printTerminal("Connecting to 192.168.56.10...<br><span class='text-emerald-400'>Authenticity established. Welcome to Debian GNU/Linux 12 (server-tkj)!</span>", "text-sky-300");
+                    completeTask(3);
+                } else {
+                    printTerminal("ssh: connect to host failed: Connection refused. Coba: ssh siswa@192.168.56.10", "text-red-400");
+                }
+            } 
+            else if (cmdLower.startsWith('mkdir ')) {
+                const folderName = originalCmd.split(' ')[1] || 'FolderBaru';
+                printTerminal(`Direktori '${folderName}' berhasil dibuat di /home/siswa/${folderName}`, "text-emerald-300");
+                completeTask(4);
+            } 
+            else {
+                printTerminal(`bash: ${originalCmd}: command not found. Ketik 'help' untuk petunjuk.`, "text-red-400");
+            }
+        }
+
+        function completeTask(taskNum) {
+            labTasks[`task${taskNum}`] = true;
+            const taskCard = document.getElementById(`task-${taskNum}`);
+            const icon = document.getElementById(`task-icon-${taskNum}`);
+            if (taskCard && icon) {
+                taskCard.className = "p-3 bg-emerald-950/40 rounded-xl border border-emerald-500/40 flex items-start gap-2.5";
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-base mt-0.5";
+            }
+            updateOverallProgress();
+        }
+
+        function resetTerminal() {
+            isSshConnected = false;
+            document.getElementById('terminal-prompt').innerText = "PS C:\\Users\\SiswaHost>";
+            document.getElementById('terminal-prompt').className = "font-mono text-xs sm:text-sm font-bold text-emerald-400 whitespace-nowrap";
+            document.getElementById('terminal-window-title').innerText = "bash - Host Terminal (Windows PowerShell)";
+            document.getElementById('terminal-screen').innerHTML = '<div class="text-slate-400">Terminal di-reset. Ketik <span class="text-emerald-400">help</span> untuk melihat perintah.</div>';
+        }
+
+        // Quiz Engine with Fisher-Yates Shuffling Algorithm
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startQuiz() {
+            // Shuffle Question order and Option order
+            activeQuizQuestions = rawQuestionBank.map(item => {
+                const originalOptions = item.options.map((opt, idx) => ({ text: opt, isCorrect: idx === item.answer }));
+                const shuffledOpts = shuffleArray(originalOptions);
+                const newCorrectIdx = shuffledOpts.findIndex(o => o.isCorrect);
+
+                return {
+                    q: item.q,
+                    options: shuffledOpts.map(o => o.text),
+                    answer: newCorrectIdx,
+                    explain: item.explain
+                };
+            });
+
+            activeQuizQuestions = shuffleArray(activeQuizQuestions);
+            userAnswers = new Array(activeQuizQuestions.length).fill(null);
+            currentQuizIndex = 0;
+
+            document.getElementById('quiz-start-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.add('hidden');
+            document.getElementById('quiz-running-screen').classList.remove('hidden');
+
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const qData = activeQuizQuestions[currentQuizIndex];
+            document.getElementById('quiz-question-number').innerText = `${currentQuizIndex + 1} / ${activeQuizQuestions.length}`;
+            document.getElementById('quiz-progress-fill').style.width = `${((currentQuizIndex + 1) / activeQuizQuestions.length) * 100}%`;
+            document.getElementById('quiz-question-text').innerText = `${currentQuizIndex + 1}. ${qData.q}`;
+
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+
+            const optionLabels = ['A', 'B', 'C', 'D', 'E'];
+
+            qData.options.forEach((optText, optIdx) => {
+                const isSelected = userAnswers[currentQuizIndex] === optIdx;
+                const optBtn = document.createElement('button');
+                optBtn.type = 'button';
+                optBtn.onclick = () => selectOption(optIdx);
+
+                optBtn.className = `w-full text-left p-3.5 rounded-xl border text-xs sm:text-sm font-medium transition-all flex items-center gap-3 ${
+                    isSelected 
+                        ? 'bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-500/10' 
+                        : 'bg-slate-900/80 hover:bg-slate-700/60 text-slate-200 border-slate-700'
+                }`;
+
+                optBtn.innerHTML = `
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                        isSelected ? 'bg-white text-sky-600' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                    }">${optionLabels[optIdx]}</span>
+                    <span class="flex-1">${optText}</span>
+                `;
+                container.appendChild(optBtn);
+            });
+
+            document.getElementById('btn-prev-q').disabled = (currentQuizIndex === 0);
+            
+            const nextBtn = document.getElementById('btn-next-q');
+            if (currentQuizIndex === activeQuizQuestions.length - 1) {
+                nextBtn.innerHTML = `Selesai & Lihat Hasil <i class="fa-solid fa-check-circle ml-1"></i>`;
+                nextBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all";
+            } else {
+                nextBtn.innerHTML = `Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i>`;
+                nextBtn.className = "bg-sky-600 hover:bg-sky-500 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all";
+            }
+        }
+
+        function selectOption(optIdx) {
+            userAnswers[currentQuizIndex] = optIdx;
+            renderQuestion();
+        }
+
+        function prevQuestion() {
+            if (currentQuizIndex > 0) {
+                currentQuizIndex--;
+                renderQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (userAnswers[currentQuizIndex] === null) {
+                // Flash alert styling inside UI
+                alert("Harap pilih salah satu opsi jawaban sebelum melanjutkan.");
+                return;
+            }
+
+            if (currentQuizIndex < activeQuizQuestions.length - 1) {
+                currentQuizIndex++;
+                renderQuestion();
+            } else {
+                calculateQuizResult();
+            }
+        }
+
+        function calculateQuizResult() {
+            let correctCount = 0;
+            activeQuizQuestions.forEach((q, idx) => {
+                if (userAnswers[idx] === q.answer) correctCount++;
+            });
+
+            const score = Math.round((correctCount / activeQuizQuestions.length) * 100);
+            const isPassed = score >= 75;
+
+            document.getElementById('quiz-running-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.remove('hidden');
+
+            document.getElementById('result-score-val').innerText = score;
+            document.getElementById('result-correct-val').innerText = `${correctCount} / ${activeQuizQuestions.length}`;
+
+            const badgeIcon = document.getElementById('result-badge-icon');
+            const passBadge = document.getElementById('result-pass-badge');
+
+            if (isPassed) {
+                badgeIcon.className = "w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto shadow-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-award"></i>`;
+                passBadge.className = "text-xs sm:text-sm font-bold text-emerald-400 mt-2.5";
+                passBadge.innerText = "COMPETENT (LULUS)";
+            } else {
+                badgeIcon.className = "w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto shadow-xl bg-red-500/20 text-red-400 border border-red-500/30";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+                passBadge.className = "text-xs sm:text-sm font-bold text-red-400 mt-2.5";
+                passBadge.innerText = "NOT YET COMPETENT";
+            }
+
+            updateOverallProgress();
+        }
+
+        function restartQuiz() {
+            document.getElementById('quiz-explanations-container').classList.add('hidden');
+            startQuiz();
+        }
+
+        function showExplanations() {
+            const expContainer = document.getElementById('quiz-explanations-container');
+            const expList = document.getElementById('explanations-list');
+            expList.innerHTML = '';
+
+            const optionLabels = ['A', 'B', 'C', 'D', 'E'];
+
+            activeQuizQuestions.forEach((q, idx) => {
+                const userChoice = userAnswers[idx];
+                const isCorrect = (userChoice === q.answer);
+
+                const itemCard = document.createElement('div');
+                itemCard.className = `p-4 rounded-xl border text-xs sm:text-sm space-y-2 ${
+                    isCorrect ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-red-950/20 border-red-500/30'
+                }`;
+
+                itemCard.innerHTML = `
+                    <div class="font-bold text-white flex items-center justify-between">
+                        <span>Soal ${idx + 1}: ${q.q}</span>
+                        <span class="${isCorrect ? 'text-emerald-400' : 'text-red-400'} font-semibold">
+                            ${isCorrect ? '<i class="fa-solid fa-check mr-1"></i> Benar' : '<i class="fa-solid fa-xmark mr-1"></i> Salah'}
+                        </span>
+                    </div>
+                    <div class="text-slate-300">
+                        Jawaban Anda: <strong class="${isCorrect ? 'text-emerald-300' : 'text-red-300'}">${optionLabels[userChoice]}. ${q.options[userChoice]}</strong>
+                    </div>
+                    ${!isCorrect ? `<div class="text-emerald-400">Jawaban Tepat: <strong>${optionLabels[q.answer]}. ${q.options[q.answer]}</strong></div>` : ''}
+                    <div class="p-2.5 bg-slate-900/90 rounded-lg text-slate-400 text-xs mt-2 border border-slate-800">
+                        <i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i> <strong>Pembahasan:</strong> ${q.explain}
+                    </div>
+                `;
+                expList.appendChild(itemCard);
+            });
+
+            expContainer.classList.remove('hidden');
+            expContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
